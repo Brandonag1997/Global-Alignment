@@ -21,6 +21,14 @@ This will output the best alignments for the 2 sequences and save the results to
   - This optional parameter specifies the similarity matrix if no matrix is specied a simple match/mismatch/gap scoring matrix will be used
   - Available similarity matrices include
     - BLOSUM62 
+    - BLOSUM30 increased by 5 up to BLOSUM90
+    - BLUSOM100
+    - PAM10 increased by 10 up to PAM500
+    - NUC.4.2 and NUC.4.4
+    - DAYHOFF
+    - GONNET
+    - IDENTITY
+    - MATCH (gives the same results as the default)
 - `--match`
   - The score that is assigned to 2 nucleotides or amino acids that match. This value defaults to 1. This is only used when a similarity matrix is not specified.
 - `--mismatch`
