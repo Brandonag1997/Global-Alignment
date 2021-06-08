@@ -17,3 +17,11 @@ The program takes at least 2 arguments, the locations of the sequences you want 
 This will output the best alignments for the 2 sequences and save the results to Output.txt
 
 ## Options
+- `--similarity_matrix`
+  - This optional parameter specifies the similarity matrix if no matrix is specied a simple match/mismatch/gap scoring matrix will be used
+- `--match`
+  - The score that is assigned to 2 nucleotides or amino acids that match. This value defaults to 1. This is only used when a similarity matrix is not specified.
+- `--mismatch`
+  - The score that is assigned to 2 nucleotides or amino acids that do not match. This value defaults to -1. This is only used when a similarity matrix is not specified.
+- `--gap`
+  - The score that is assigned to a nucleotide or amino acid that is aligned to a gap. This value defaults to -1. This is only used when a similarity matrix is not specified.
