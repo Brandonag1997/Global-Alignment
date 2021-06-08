@@ -6,7 +6,7 @@ Type the following command into the terminal
 
 `$ git clone https://github.com/Brandonag1997/Global-Alignment.git`
 ## Usage
+The global allignment program takes 2 texts files containing either nucleotide or amino-acid sequences. To run navigate to ./Global-Alignment and make globalalign.py executable by running
 
-
-
+`$ chmod +x globalalign.py`
 
