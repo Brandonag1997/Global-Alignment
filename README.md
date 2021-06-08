@@ -19,6 +19,8 @@ This will output the best alignments for the 2 sequences and save the results to
 ## Options
 - `--similarity_matrix`
   - This optional parameter specifies the similarity matrix if no matrix is specied a simple match/mismatch/gap scoring matrix will be used
+  - Available similarity matrices include
+    - BLOSUM62 
 - `--match`
   - The score that is assigned to 2 nucleotides or amino acids that match. This value defaults to 1. This is only used when a similarity matrix is not specified.
 - `--mismatch`
