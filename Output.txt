@@ -1,1 +1,13 @@
-
+Sequence 1
+VSPAGMASGYD
+Sequence 2
+IPGKASYD
+Best Allignment 1
+VSPAGMASGYD
+I-P-GKAS-YD
+Best Allignment 2
+VSPAGM-ASGYD
+I-P-G-KAS-YD
+Best Allignment 3
+VSPAG-MASGYD
+I-P-GK-AS-YD

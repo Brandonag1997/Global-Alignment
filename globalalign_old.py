@@ -45,15 +45,29 @@ def main():
 
     rows, cols = (sequenceLength2 + 1, sequenceLength1 + 1)
     Fmatrix = [[0 for i in range(cols)] for j in range(rows)]
-    if False:
-        Fmatrix[0][0] = 0
-        Imatrix[0][0] = 0
+    Mmatrix = [[0 for i in range(cols)] for j in range(rows)]
+    Ixmatrix = [[0 for i in range(cols)] for j in range(rows)]
+    Iymatrix = [[0 for i in range(cols)] for j in range(rows)]
+    if (indel != extension):
+        for i in range(0, sequenceLength2 + 1):
+            Fmatrix[i][0] = indel + (i-1)*extension
+            Mmatrix[i][0] = float("-inf")
+            Ixmatrix[i][0] = float("-inf")
+            Iymatrix[i][0] = indel + i * extension
+        for j in range(0, sequenceLength1 + 1):
+            Fmatrix[0][j] = indel + (j-1)*extension
+            Mmatrix[0][j] = float("-inf")
+            Ixmatrix[0][j] = indel + j * extension
+            Iymatrix[0][j] = float("-inf")
         for i in range(1, sequenceLength2 + 1):
-            Fmatrix[i][0] = indel + (i-1) * extension
-            Imatrix[i][0] = Fmatrix
-        for j in range(1, sequenceLength1 + 1):
-            Fmatrix[0][j] = indel * (j-1) * extension
-            Imatrix[0][j] = Fmatrix
+            for j in range(1, sequenceLength1 + 1):
+                    M = Mmatrix[i-1][j-1] + similarityMatrix(sequence2[i-1], sequence1[j-1])
+                    D = Ixmatrix[i-1][j-1] + similarityMatrix(sequence2[i-1], sequence1[j-1])
+                    I = Iymatrix[i-1][j-1] + similarityMatrix(sequence2[i-1], sequence1[j-1])
+                    Mmatrix[i][j] = max(M,D,I)
+                    Ixmatrix[i][j] = max(Mmatrix[i][j-1] + indel + extension, Ixmatrix[i][j-1] + extension, Iymatrix[i][j-1] + indel + extension)
+                    Iymatrix[i][j] = max(Mmatrix[i-1][j] + indel + extension, Iymatrix[i-1][j] + extension, Ixmatrix[i-1][j] + indel + extension)
+                    Fmatrix[i][j] = max(Mmatrix[i][j], Ixmatrix[i][j], Iymatrix[i][j])
     else:
         for i in range(0, sequenceLength2 + 1):
             Fmatrix[i][0] = indel * i
@@ -68,39 +82,30 @@ def main():
 
     AllignmentA = ""
     AllignmentB = ""
-
-    def findAllignment(AllA,AllB,i_x,j_x,score):
-        if (i_x == 0 and j_x == 0):
-            print("Best Allignment")
-            print(AllB)
-            print(AllA)
-            # print(score)
-            return
-        nextScores = [Fmatrix[i_x-1][j_x] + indel, Fmatrix[i_x][j_x-1] + indel, Fmatrix[i_x-1][j_x-1]+ similarityMatrix(sequence2[i-1],sequence1[j-1])]
-        mNext = max(nextScores)
-        newScore = mNext + score
-
-        #if there is a match or mismatch
-        if (i_x> 0 and j_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x-1][j_x-1] + similarityMatrix(sequence2[i_x-1],sequence1[j_x-1])):
-            AllAn = sequence2[i_x - 1] + AllA
-            AllBn = sequence1[j_x - 1] + AllB
-            findAllignment(AllAn,AllBn,i_x-1,j_x-1,newScore)
+    i = sequenceLength2
+    j = sequenceLength1
+    #find optimal allignment, there may be more than 1 but this only finds 1
+    while (i > 0 or j > 0):
+        #if there is a match
+        if (i > 0 and j > 0 and Fmatrix[i][j] == (Fmatrix[i-1][j-1] + similarityMatrix(sequence2[i-1],sequence1[j-1]))):
+            AllignmentA = sequence2[i - 1] + AllignmentA
+            AllignmentB = sequence1[j - 1] + AllignmentB
+            i = i - 1
+            j = j - 1
         #if there is a deletion then match allignmentA with a gap
-        if (i_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x-1][j_x] + indel):
-            AllAn = sequence2[i_x - 1] + AllA
-            AllBn = "-" + AllB
-            findAllignment(AllAn,AllBn,i_x-1,j_x,newScore)
+        elif (i > 0 and Fmatrix[i][j] == Fmatrix[i-1][j] + indel):
+            AllignmentA = sequence2[i - 1] + AllignmentA
+            AllignmentB = "-" + AllignmentB
+            i = i - 1
         #if there is a insertion then match allignmentB with a gap
-        if (j_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x][j_x-1] + indel):
-            AllAn = "-" + AllA
-            AllBn = sequence1[j_x - 1] + AllB
-            findAllignment(AllAn,AllBn,i_x,j_x-1,newScore)
-
-    findAllignment("","",sequenceLength2,sequenceLength1,0)
-    # print("Global Allignment")
-    # print(AllignmentB)
-    # print(AllignmentA)
-    # with open ("Output.txt", "w") as output_file:
-    #     output_file.writelines([AllignmentB,"\n", AllignmentA])
+        else:
+            AllignmentA = "-" + AllignmentA
+            AllignmentB = sequence1[j - 1] + AllignmentB
+            j = j - 1
+    print("Global Allignment")
+    print(AllignmentB)
+    print(AllignmentA)
+    with open ("Output.txt", "w") as output_file:
+        output_file.writelines([AllignmentB,"\n", AllignmentA])
 if __name__ == '__main__':
     main()
