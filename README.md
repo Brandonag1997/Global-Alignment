@@ -10,3 +10,10 @@ The global allignment program takes 2 texts files containing either nucleotide o
 
 `$ chmod +x globalalign.py`
 
+The program takes at least 2 arguments, the locations of the sequences you want to align. Fow example
+
+`$ ./globalalign.py ./examples/exampleSequence1.txt ./examples/exampleSequence2.txt`
+
+This will output the best alignments for the 2 sequences and save the results to Output.txt
+
+## Options
