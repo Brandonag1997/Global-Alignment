@@ -1,6 +1,6 @@
 # Global-Alignment
 ## Introduction
-A python implementation of the Needleman–Wunsch algorithm. This program will find the optimal global allignment of two DNA sequences.
+A python implementation of the Needleman–Wunsch algorithm. This program will find the optimal global allignments for two DNA, RNA or amino acid sequences.
 ## How to get the code
 Type the following command into the terminal
 
@@ -10,7 +10,7 @@ The global allignment program takes 2 texts files containing either nucleotide o
 
 `$ chmod +x globalalign.py`
 
-The program takes at least 2 arguments, the locations of the sequences you want to align. Fow example
+The program takes at least 2 arguments, the locations of the sequences you want to align. For example
 
 `$ ./globalalign.py ./examples/exampleSequence1.txt ./examples/exampleSequence2.txt`
 
