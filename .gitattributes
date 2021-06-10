@@ -1,2 +1,1 @@
-./matrices/* linguist-vendored
-* linguist-vendored=false
+ *.* linguist-language=Python
