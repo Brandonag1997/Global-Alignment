@@ -1,2 +1,2 @@
-./matrices linguist-vendored
+./matrices/* linguist-vendored
 * linguist-vendored=false
