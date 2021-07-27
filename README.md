@@ -34,4 +34,4 @@ This will output the best alignments for the 2 sequences and save the results to
 - `--mismatch`
   - The score that is assigned to 2 nucleotides or amino acids that do not match. This value defaults to -1. This is only used when a similarity matrix is not specified.
 - `--gap`
-  - The score that is assigned to a nucleotide or amino acid that is aligned to a gap. This value defaults to -1. This is only used when a similarity matrix is not specified.
+  - The score that is assigned to a nucleotide or amino acid that is aligned to a gap. This value defaults to -1.
