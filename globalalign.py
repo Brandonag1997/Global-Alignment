@@ -1,16 +1,159 @@
 #!/usr/bin/env python
-import sys
 import argparse
 import os
 
+
+class GlobalAlign:
+
+    def __init__(
+        self,
+        match: int = 1,
+        mismatch: int = -1,
+        gap: int = -1,
+        similarity_matrix_path: str = None,
+    ):
+        """sets initial values"""
+        self.match = match
+        self.mismatch = mismatch
+        self.indel = gap
+        self.matrix = self.parse_matrix(similarity_matrix_path)
+        self.f_matrix = None
+
+    def parse_matrix(self, similarity_matrix_path):
+        """Parse similarity_matrix_path and return matrix"""
+        matrix = None
+        if similarity_matrix_path is not None and os.path.exists(
+            similarity_matrix_path
+        ):
+            matrix = {}
+            with open(similarity_matrix_path, mode="r", encoding="utf-8") as reader:
+                lines = reader.readlines()
+                for l in lines:
+                    if l[0] == "#":  # skip comments
+                        continue
+
+                    if l[0] == " ":
+                        columns = l.split()
+                    else:
+                        scores = l.split()
+                        if len(scores) == 0:
+                            continue
+                        letter = scores[0]
+                        for index, item in enumerate(columns):
+                            matrix[(letter, item)] = scores[index + 1]
+        return matrix
+
+    def update_matrix(self, similarity_matrix_path):
+        """Updates the GlobalAlign similarity_matrix"""
+        self.matrix = self.parse_matrix(similarity_matrix_path)
+
+    def similarity_matrix(self, a, b):
+        """Give the results of a similarity matrix for 2 given elements.
+        Defaults to basic similarity matrix"""
+        if a == "U":
+            a = "T"
+        if b == "U":
+            b = "T"
+        if self.matrix is None:  # basic similarity matrix
+            if a == b:
+                return self.match
+            return self.mismatch
+        if a == " " or b == " ":
+            return self.mismatch
+        return int(self.matrix.get((a, b), self.mismatch))
+
+    def get_f_matrix(self, sequence1: str, sequence2: str):
+        """Calculate F matrix"""
+        rows, cols = (len(sequence2) + 1, len(sequence1) + 1)
+        f_matrix = [
+            [0 for i in range(cols)] for j in range(rows)
+        ]  # fill matrix with 0s
+        for i in range(0, len(sequence2) + 1):  # assign gap penalty
+            f_matrix[i][0] = self.indel * i
+        for j in range(0, len(sequence1) + 1):  # assign gap penalty
+            f_matrix[0][j] = self.indel * j
+        for i in range(1, len(sequence2) + 1):
+            for j in range(1, len(sequence1) + 1):
+                # match or mismatch
+                match = f_matrix[i - 1][j - 1] + self.similarity_matrix(
+                    sequence2[i - 1], sequence1[j - 1]
+                )
+                # gap insertion or deletion
+                deletion = f_matrix[i - 1][j] + self.indel
+                insertion = f_matrix[i][j - 1] + self.indel
+                f_matrix[i][j] = max(match, deletion, insertion)
+        return f_matrix
+
+    def align_sequences(self, sequence1: str, sequence2: str):
+        """Align 2 sequences and set the alignments as the results"""
+        self.f_matrix = self.get_f_matrix(sequence1, sequence2)
+        alignments = self.find_alignment(sequence1, sequence2)
+        score = self.f_matrix[len(sequence2)][len(sequence1)]
+        return (alignments, score)
+
+    def find_alignment(self, sequence1: str, sequence2: str):
+        """function to find alignment of 2 sequences"""
+        i = len(sequence2)
+        j = len(sequence1)
+        stack = [("", "", i, j)]
+        results = []
+
+        while stack:
+            alignment_a, alignment_b, i, j = stack.pop()
+
+            if i == 0 and j == 0:
+                results.append((alignment_b, alignment_a))
+                continue
+
+            current_score = self.f_matrix[i][j]
+
+            if (
+                i > 0
+                and j > 0
+                and current_score
+                == self.f_matrix[i - 1][j - 1]
+                + self.similarity_matrix(sequence2[i - 1], sequence1[j - 1])
+            ):  # match or mismatch
+                stack.append(
+                    (
+                        sequence2[i - 1] + alignment_a,
+                        sequence1[j - 1] + alignment_b,
+                        i - 1,
+                        j - 1,
+                    )
+                )
+            # if there is a deletion then match alignmentA with a gap
+            if i > 0 and current_score == self.f_matrix[i - 1][j] + self.indel:
+                stack.append(
+                    (sequence2[i - 1] + alignment_a, "-" + alignment_b, i - 1, j)
+                )
+            # if there is a insertion then match alignmentB with a gap
+            if j > 0 and current_score == self.f_matrix[i][j - 1] + self.indel:
+                stack.append(
+                    ("-" + alignment_a, sequence1[j - 1] + alignment_b, i, j - 1)
+                )
+        return results
+
+
+def read_sequence(file_path):
+    """Read a FASTQ sequnce from a text file"""
+    with open(file_path, mode="r", encoding="utf-8") as reader:
+        sequence = reader.readline().strip()
+        return sequence
+
+
 def main():
-    parser = argparse.ArgumentParser(prog='globalalign',description='find the global alignment of two sequences')
-    parser.add_argument('sequence1', type = str, help = 'the first sequence') #file location
-    parser.add_argument('sequence2', type = str, help = 'the second sequence')
-    parser.add_argument('--match', type = int, default = 1)
-    parser.add_argument('--mismatch', type = int, default = -1)
-    parser.add_argument('--gap', type = int, default = -1, help = 'Gap penalty')
-    parser.add_argument('--similarity_matrix', type = str)
+    parser = argparse.ArgumentParser(
+        prog="globalalign", description="find the global alignment of two sequences"
+    )
+    parser.add_argument(
+        "sequence1", type=str, help="the first sequence"
+    )  # file location
+    parser.add_argument("sequence2", type=str, help="the second sequence")
+    parser.add_argument("--match", type=int, default=1)
+    parser.add_argument("--mismatch", type=int, default=-1)
+    parser.add_argument("--gap", type=int, default=-1, help="Gap penalty")
+    parser.add_argument("--similarity_matrix", type=str)
 
     args = parser.parse_args()
     filename1 = args.sequence1
@@ -20,118 +163,19 @@ def main():
     indel = args.gap
     similarity_matrix = args.similarity_matrix
 
-    # need to add in check if file exists
-    matrix = {}
-    if(similarity_matrix is not None):
-        dirname = os.path.dirname(__file__)
-        filenameS = os.path.join(dirname, 'matrices/',similarity_matrix)
-        with open(filenameS, 'r') as reader:
-            lines = reader.readlines()
-            for l in lines:
-                if(l[0] == "#"):
-                    continue
-                elif(l[0] == " "):
-                    ls = l.split()
-                    # print(ls)
-                    continue
-                else:
-                    vals = l.split()
-                    if(len(vals) == 0):
-                        continue
-                    letter = vals[0]
-                    for index, item in enumerate(ls):
-                        matrix[(letter,item)] = vals[index+1]
- 
-    def similarityMatrix(a,b): #basic similarity matrix
-        # print(a,b)
-        if (a=='U'):
-            a = 'T'
-        if (b=='U'):
-            b = 'T'
-        if(similarity_matrix is None):
-            if(a==b):
-                return match
-            else:
-                return mismatch
-        else:
-            if(a == " " or b == " "):
-                return mismatch
-            return int(matrix.get((a,b)))
+    alligner = GlobalAlign(match, mismatch, indel, similarity_matrix)
+    sequence1 = read_sequence(filename1)
+    sequence2 = read_sequence(filename2)
+    alignments = set(alligner.align_sequences(sequence1, sequence2))
+    print("sequence1")
+    print(sequence1)
+    print("sequence2")
+    print(sequence2)
+    for i, alignment in enumerate(alignments):
+        print(f"Best Alignment {i+1}")
+        print(alignment[0])
+        print(alignment[1])
 
 
-    with open(filename1, 'r') as reader:
-        sequence1 = reader.readline()
-        sequenceLength1 = len(sequence1)
-        if(sequence1[len(sequence1)-1] == '\n'):
-            sequenceLength1 = sequenceLength1 - 1
-            sequence1 = sequence1[:sequenceLength1]
-        print("Sequence 1")
-        print(sequence1)
-
-    with open(filename2, 'r') as reader:
-        sequence2 = reader.readline()
-        sequenceLength2 = len(sequence2)
-        if(sequence2[len(sequence2)-1] == '\n'):
-            sequenceLength2 = sequenceLength2 - 1
-            sequence2 = sequence2[:sequenceLength2]
-        print("Sequence 2")
-        print(sequence2)
-
-    rows, cols = (sequenceLength2 + 1, sequenceLength1 + 1)
-    Fmatrix = [[0 for i in range(cols)] for j in range(rows)]
-    for i in range(0, sequenceLength2 + 1):
-        Fmatrix[i][0] = indel * i
-    for j in range(0, sequenceLength1 + 1):
-        Fmatrix[0][j] = indel * j
-    for i in range(1, sequenceLength2 + 1):
-        for j in range(1, sequenceLength1 + 1):
-                M = Fmatrix[i-1][j-1] + similarityMatrix(sequence2[i-1], sequence1[j-1])
-                D = Fmatrix[i-1][j] + indel
-                I = Fmatrix[i][j-1] + indel
-                Fmatrix[i][j] = max(M,D,I)
-
-    AllignmentA = ""
-    AllignmentB = ""
-    global allCount
-    allCount = 0
-
-    def findAllignment(AllA,AllB,i_x,j_x,score,output_file):
-        
-        if (i_x == 0 and j_x == 0):
-            global allCount
-            allCount = allCount + 1
-            print("Best Allignment", allCount)
-            print(AllB)
-            print(AllA)
-            output_file.writelines(["Best Allignment ", str(allCount), "\n", AllB, "\n", AllA, "\n"])
-            return
-        nextScores = [Fmatrix[i_x-1][j_x] + indel, Fmatrix[i_x][j_x-1] + indel, Fmatrix[i_x-1][j_x-1]+ similarityMatrix(sequence2[i-1],sequence1[j-1])]
-        mNext = max(nextScores)
-        newScore = mNext + score
-
-        #if there is a match or mismatch
-        if (i_x> 0 and j_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x-1][j_x-1] + similarityMatrix(sequence2[i_x-1],sequence1[j_x-1])):
-            AllAn = sequence2[i_x - 1] + AllA
-            AllBn = sequence1[j_x - 1] + AllB
-            findAllignment(AllAn,AllBn,i_x-1,j_x-1,newScore,output_file)
-        #if there is a deletion then match allignmentA with a gap
-        if (i_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x-1][j_x] + indel):
-            AllAn = sequence2[i_x - 1] + AllA
-            AllBn = "-" + AllB
-            findAllignment(AllAn,AllBn,i_x-1,j_x,newScore,output_file)
-        #if there is a insertion then match allignmentB with a gap
-        if (j_x > 0 and Fmatrix[i_x][j_x] == Fmatrix[i_x][j_x-1] + indel):
-            AllAn = "-" + AllA
-            AllBn = sequence1[j_x - 1] + AllB
-            findAllignment(AllAn,AllBn,i_x,j_x-1,newScore,output_file)
-
-    with open ("Output.txt", "w") as output_file:
-        output_file.writelines(["Sequence 1","\n",sequence1,"\n","Sequence 2","\n",sequence2,"\n"])
-        findAllignment("","",sequenceLength2,sequenceLength1,0,output_file)
-    # print("Global Allignment")
-    # print(AllignmentB)
-    # print(AllignmentA)
-    # with open ("Output.txt", "w") as output_file:
-    #     output_file.writelines([AllignmentB,"\n", AllignmentA])
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
